@@ -17,6 +17,8 @@
 
 int leftPWM = 0;
 int rightPWM = 0;
+long value_1 = 0;
+long value_2 = 0;
 boolean leftDirection = FORWARD;
 boolean rightDirection = FORWARD;
 boolean enableWinch = false;
@@ -68,24 +70,39 @@ void loop() {
   } else {
 
   //mixing the channels
-  long value_1 = pwm_value_1-CENTER1;
-  long value_2 = pwm_value_2-CENTER2;
+  value_1 = pwm_value_1-CENTER1;
+  value_2 = pwm_value_2-CENTER2;
 
-  //curve manipulation depending stick position
-  /*if (value_1 > -200 && value_1 < 200) {
-    leftPWM = (2*value_1+value_2/2);
-    rightPWM = (2*value_1-value_2/2);
-  } else {*/
+  if (value_1 > -20 && value_1 < 20) {
+    value_1 = 0;
+  }
+
+  //mixing
+  if (value_1 > -100 && value_1 < 100) {
     leftPWM = (value_1+value_2);
     rightPWM = (value_1-value_2);
-  //}
+  } else {
+    leftPWM = (value_1+value_2/2);
+    rightPWM = (value_1-value_2/2);
+  }
   
+
+  //mapping in the correct range
   leftPWM = map(leftPWM, -500, 500, -255, 255);
   rightPWM = map(rightPWM, -500, 500, -255, 255);
 
-  //smoothing the signal around zero
-  if (leftPWM > -10 && leftPWM < 10) leftPWM = 0;
-  if (rightPWM > -10 && rightPWM < 10) rightPWM = 0;
+  //smoothing the signal at extrema
+  if (leftPWM > -20 && leftPWM < 20) leftPWM = 0;
+  if (rightPWM > -20 && rightPWM < 20) rightPWM = 0;
+
+  //don't reverse when you drive forward or backward
+  if (value_1 > 0 && leftPWM < 0) {
+    leftPWM = 1;
+  }
+  if (value_1 < 0 && rightPWM > 0) {
+    rightPWM = 1;
+  }
+  
 
   //switch forward backward
   if (leftPWM < 0) {
@@ -137,7 +154,10 @@ void loop() {
   
   analogWrite(LEFT_PWM_OUTPUT, leftPWM);
   analogWrite(RIGHT_PWM_OUTPUT, rightPWM);
-  
+  debug();
+}
+
+void debug() {
   Serial.print(pwm_value_1);
   Serial.print("\t");
   Serial.print(pwm_value_2);
@@ -145,6 +165,8 @@ void loop() {
   Serial.print(pwm_value_3);
   Serial.print("\t");
   Serial.print(pwm_value_4);
+  Serial.print("\t");
+  Serial.print(value_1);
   Serial.print("\t");
   Serial.print(leftDirection);
   Serial.print("\t"); 
